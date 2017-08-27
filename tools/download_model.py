@@ -28,6 +28,7 @@ def download(filename, url):
         sys.stdout.flush()
 
     urllib.request.urlretrieve(url, filename, reporthook)
+    print()
 
 
 def check(filename, sha1):
@@ -62,7 +63,7 @@ def extract_model(prototxt, model, output):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download trained Caffe Alexnet and convert it to TensorFlow model')
-    parser.add_argument('--prototxt', type=str, default='deploy.prototxt',
+    parser.add_argument('--prototxt', type=str, default='bvlc_alexnet.prototxt',
                         help='download caffe prototxt to or load it from this path')
     parser.add_argument('--model', type=str, default='bvlc_alexnet.caffemodel',
                         help='download caffe model to or load it from this path')

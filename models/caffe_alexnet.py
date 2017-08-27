@@ -114,7 +114,7 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
             weights = tf.get_variable('weights', initializer=initializer['fc6/weights'])
             biases = tf.get_variable('biases', initializer=initializer['fc6/biases'])
             output = tf.nn.relu(tf.nn.bias_add(tf.matmul(output, weights), biases))
-            output = tf.nn.dropout(output, 1 - 0.5 * training)
+            output = tf.cond(training, lambda: tf.nn.dropout(output, 0.5), lambda: output)
 
     # fc7
     if fc > 1:
@@ -122,7 +122,7 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
             weights = tf.get_variable('weights', initializer=initializer['fc7/weights'])
             biases = tf.get_variable('biases', initializer=initializer['fc7/biases'])
             output = tf.nn.relu(tf.nn.bias_add(tf.matmul(output, weights), biases))
-            output = tf.nn.dropout(output, 1 - 0.5 * training)
+            output = tf.cond(training, lambda: tf.nn.dropout(output, 0.5), lambda: output)
 
     # fc8
     if fc > 2:

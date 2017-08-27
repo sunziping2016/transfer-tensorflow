@@ -10,7 +10,7 @@ import caffe
 
 if __name__ == '__main__':
     images = tf.placeholder(tf.float32, shape=[None, 227, 227, 3], name='images')
-    training = tf.placeholder_with_default(1.0, shape=[], name='training')
+    training = tf.placeholder_with_default(True, shape=[], name='training')
     output, parameters = models.alexnet(images, training, pretrained=True)
     sess = tf.Session()
     init = tf.global_variables_initializer()
@@ -18,10 +18,10 @@ if __name__ == '__main__':
     sess.run(init)
     result = sess.run(output, feed_dict={
         images: data,
-        training: 0
+        training: False
     })
     caffe_data = data.transpose(0, 3, 1, 2)
-    net = caffe.Net('deploy.prototxt', 'bvlc_alexnet.caffemodel', caffe.TEST)
+    net = caffe.Net('bvlc_alexnet.prototxt', 'bvlc_alexnet.caffemodel', caffe.TEST)
     net.blobs['data'].reshape(*caffe_data.shape)
     net.blobs['data'].data[:] = caffe_data
     net.forward()
