@@ -25,5 +25,9 @@ if __name__ == '__main__':
     net.blobs['data'].reshape(*caffe_data.shape)
     net.blobs['data'].data[:] = caffe_data
     net.forward()
-    assert np.sum((result - net.blobs['fc8'].data) ** 2) < 1e-5
-    print('Test Okay')
+    diff = np.sum((result - net.blobs['fc8'].data) ** 2)
+    if diff < 1e-5:
+        print('Test Okay')
+    else:
+        print('Test failed')
+        print('  diff: %f' % diff)

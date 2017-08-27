@@ -37,7 +37,11 @@ def check(filename, sha1):
 
 def parameter_provider(model, name, params):
     if name.startswith('fc'):
-        model[name + '/weights'] = params[0].data.transpose(1, 0)
+        if name == 'fc6':
+            model[name + '/weights'] = params[0].data\
+                .reshape(4096, 256, 6, 6).transpose(2, 3, 1, 0).reshape(9216, 4096)
+        else:
+            model[name + '/weights'] = params[0].data.transpose(1, 0)
         if len(params) > 1:
             model[name + '/biases'] = params[1].data
     elif name.startswith('conv'):

@@ -110,7 +110,7 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
     # fc6
     if fc > 0:
         with tf.variable_scope('fc6'):
-            output = tf.reshape(tf.transpose(output, perm=[0, 3, 1, 2]), [-1, 9216])
+            output = tf.reshape(output, [-1, 9216])
             weights = tf.get_variable('weights', initializer=initializer['fc6/weights'])
             biases = tf.get_variable('biases', initializer=initializer['fc6/biases'])
             output = tf.nn.relu(tf.nn.bias_add(tf.matmul(output, weights), biases))
