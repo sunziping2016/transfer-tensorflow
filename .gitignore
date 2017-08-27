@@ -101,5 +101,7 @@ ENV/
 
 .idea
 models/alexnet.pkl
-tools/*.caffemodel
-tools/*.prototxt
+*.caffemodel
+*.prototxt
+data/office/*
+!data/office/download.sh
