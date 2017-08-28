@@ -100,7 +100,7 @@ ENV/
 .mypy_cache/
 
 .idea
-models/alexnet.pkl
+*.pkl
 *.caffemodel
 *.prototxt
 data/office/*

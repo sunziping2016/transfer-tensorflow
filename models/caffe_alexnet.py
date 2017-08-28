@@ -37,7 +37,7 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
         'fc8/biases': tf.zeros([classes]),
     }
     if pretrained:
-        params = pickle.load(open(os.path.join(os.path.dirname(__file__), 'alexnet.pkl'), 'rb'))
+        params = pickle.load(open(os.path.join(os.path.dirname(__file__), 'caffe_alexnet.pkl'), 'rb'))
         for param in params:
             if param in initializer and initializer[param].shape == params[param].shape:
                 initializer[param] = params[param]

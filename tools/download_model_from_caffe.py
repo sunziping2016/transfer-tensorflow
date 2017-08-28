@@ -36,39 +36,42 @@ def check(filename, sha1):
         return hashlib.sha1(f.read()).hexdigest() == sha1
 
 
-def parameter_provider(model, name, params):
-    if name.startswith('fc'):
-        if name == 'fc6':
-            model[name + '/weights'] = params[0].data\
-                .reshape(4096, 256, 6, 6).transpose(2, 3, 1, 0).reshape(9216, 4096)
-        else:
-            model[name + '/weights'] = params[0].data.transpose(1, 0)
-        if len(params) > 1:
-            model[name + '/biases'] = params[1].data
-    elif name.startswith('conv'):
-        model[name + '/weights'] = params[0].data.transpose(2, 3, 1, 0)
-        if len(params) > 1:
-            model[name + '/biases'] = params[1].data
-
-
 def extract_model(prototxt, model, output):
     os.environ['GLOG_minloglevel'] = '2'
     import caffe
     import pickle
     net = caffe.Net(prototxt, model, caffe.TEST)
     model = {}
-    for layer in net.params:
-        parameter_provider(model, layer, net.params[layer])
+    first_conv, first_fc = True, True
+    for name in net.params:
+        params = net.params[name]
+        if name.startswith('fc'):
+            if first_fc:
+                model[name + '/weights'] = params[0].data \
+                    .reshape(4096, 256, 6, 6).transpose(2, 3, 1, 0).reshape(9216, 4096)
+                first_fc = False
+            else:
+                model[name + '/weights'] = params[0].data.transpose(1, 0)
+            if len(params) > 1:
+                model[name + '/biases'] = params[1].data
+        elif name.startswith('conv'):
+            if first_conv:
+                model[name + '/weights'] = params[0].data[:,(2, 1, 0)].transpose(2, 3, 1, 0)
+                first_conv = False
+            else:
+                model[name + '/weights'] = params[0].data.transpose(2, 3, 1, 0)
+            if len(params) > 1:
+                model[name + '/biases'] = params[1].data
     pickle.dump(model, open(output, 'wb'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download trained Caffe Alexnet and convert it to TensorFlow model')
-    parser.add_argument('--prototxt', type=str, default='bvlc_alexnet.prototxt',
+    parser.add_argument('--prototxt', type=str, default=os.path.join(os.path.dirname(__file__), 'bvlc_alexnet.prototxt'),
                         help='download caffe prototxt to or load it from this path')
-    parser.add_argument('--model', type=str, default='bvlc_alexnet.caffemodel',
+    parser.add_argument('--model', type=str, default=os.path.join(os.path.dirname(__file__), 'bvlc_alexnet.caffemodel'),
                         help='download caffe model to or load it from this path')
     parser.add_argument('-o', dest='output', type=str,
-                        default=os.path.join(os.path.dirname(__file__), '../models/alexnet.pkl'),
+                        default=os.path.join(os.path.dirname(__file__), '../models/caffe_alexnet.pkl'),
                         help='save tensorflow model to this path')
     args = parser.parse_args()
 
