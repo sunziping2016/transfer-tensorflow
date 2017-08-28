@@ -1,4 +1,3 @@
-import os
 import argparse
 import sys
 import tensorflow as tf
