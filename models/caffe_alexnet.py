@@ -3,11 +3,11 @@ import pickle
 import os
 
 
-def alexnet(images, training, classes=1000, fc=3, pretrained=False):
+def alexnet(images, train=True, classes=1000, fc=3, pretrained=False):
     """Build the AlexNet model.
     Args:
       images: Images Tensor in NHWC & RGB format (n x 227 x 227 x 3).
-      training: Scalar Tensor. 1 when training, otherwise 0. Only affects dropout.
+      train: True when training. Only affects dropout.
       classes: The number of fc8.
       fc: The number of full connected layer included in this model (-2 ... 3).
       pretrained: If True, returns a pre-trained caffe model.
@@ -22,17 +22,17 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
         'conv1/weights': tf.random_normal([11, 11, 3, 96], stddev=1e-2),
         'conv1/biases': tf.zeros([96]),
         'conv2/weights': tf.random_normal([5, 5, 48, 256], stddev=1e-2),
-        'conv2/biases': 0.1 * tf.ones([256]),
+        'conv2/biases': tf.fill([256], 0.1),
         'conv3/weights': tf.random_normal([3, 3, 256, 384], stddev=1e-2),
         'conv3/biases': tf.zeros([384]),
         'conv4/weights': tf.random_normal([3, 3, 192, 384], stddev=1e-2),
-        'conv4/biases': 0.1 * tf.ones([384]),
+        'conv4/biases': tf.fill([384], 0.1),
         'conv5/weights': tf.random_normal([3, 3, 192, 256], stddev=1e-2),
-        'conv5/biases': 0.1 * tf.ones([256]),
+        'conv5/biases': tf.fill([256], 0.1),
         'fc6/weights': tf.random_normal([9216, 4096], stddev=5e-3),
-        'fc6/biases': 0.1 * tf.ones([4096]),
+        'fc6/biases': tf.fill([4096], 0.1),
         'fc7/weights': tf.random_normal([4096, 4096], stddev=5e-3),
-        'fc7/biases': 0.1 * tf.ones([4096]),
+        'fc7/biases': tf.fill([4096], 0.1),
         'fc8/weights': tf.random_normal([4096, classes], stddev=5e-3),
         'fc8/biases': tf.zeros([classes]),
     }
@@ -114,7 +114,8 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
             weights = tf.get_variable('weights', initializer=initializer['fc6/weights'])
             biases = tf.get_variable('biases', initializer=initializer['fc6/biases'])
             output = tf.nn.relu(tf.nn.bias_add(tf.matmul(output, weights), biases))
-            output = tf.cond(training, lambda: tf.nn.dropout(output, 0.5), lambda: output)
+            if train:
+                output = tf.nn.dropout(output, 0.5)
 
     # fc7
     if fc > 1:
@@ -122,7 +123,8 @@ def alexnet(images, training, classes=1000, fc=3, pretrained=False):
             weights = tf.get_variable('weights', initializer=initializer['fc7/weights'])
             biases = tf.get_variable('biases', initializer=initializer['fc7/biases'])
             output = tf.nn.relu(tf.nn.bias_add(tf.matmul(output, weights), biases))
-            output = tf.cond(training, lambda: tf.nn.dropout(output, 0.5), lambda: output)
+            if train:
+                output = tf.nn.dropout(output, 0.5)
 
     # fc8
     if fc > 2:

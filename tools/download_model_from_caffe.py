@@ -56,7 +56,7 @@ def extract_model(prototxt, model, output):
                 model[name + '/biases'] = params[1].data
         elif name.startswith('conv'):
             if first_conv:
-                model[name + '/weights'] = params[0].data[:,(2, 1, 0)].transpose(2, 3, 1, 0)
+                model[name + '/weights'] = params[0].data[:, ::-1].transpose(2, 3, 1, 0)
                 first_conv = False
             else:
                 model[name + '/weights'] = params[0].data.transpose(2, 3, 1, 0)

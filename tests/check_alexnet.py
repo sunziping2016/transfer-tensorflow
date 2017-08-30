@@ -17,17 +17,15 @@ if __name__ == '__main__':
                         help='path to the Caffe model')
     args = parser.parse_args()
     images = tf.placeholder(tf.float32, shape=[None, 227, 227, 3], name='images')
-    training = tf.placeholder_with_default(True, shape=[], name='training')
-    output, parameters = models.alexnet(images, training, pretrained=True)
+    output, parameters = models.alexnet(images, train=False, pretrained=True)
     sess = tf.Session()
     init = tf.global_variables_initializer()
     data = np.random.rand(10, 227, 227, 3) * 4 + 150
     sess.run(init)
     result = sess.run(output, feed_dict={
-        images: data,
-        training: False
+        images: data
     })
-    caffe_data = data.transpose(0, 3, 1, 2)[:, (2, 1, 0)]
+    caffe_data = data.transpose(0, 3, 1, 2)[:, ::-1]
     net = caffe.Net(args.prototxt, args.model, caffe.TEST)
     net.blobs['data'].reshape(*caffe_data.shape)
     net.blobs['data'].data[:] = caffe_data
