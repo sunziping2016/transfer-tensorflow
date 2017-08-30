@@ -11,10 +11,10 @@ tar -xf domain_adaptation_images.tar.gz
 
 for dataset in amazon dslr webcam; do
     subfolders=($(ls "$dataset/images"))
-    rm -f "$dataset.txt"
+    rm -f "$dataset.csv"
     for ((i = 0; i < ${#subfolders[@]}; ++i)); do
         for file in $(ls "$dataset/images/${subfolders[$i]}"); do
-            echo "$dataset/images/${subfolders[$i]}/$file $i" >> "$dataset.txt"
+            echo "\"$dataset/images/${subfolders[$i]}/$file\",$i" >> "$dataset.csv"
         done
     done
 done

@@ -1,4 +1,4 @@
-from .mmd_loss import *
+from .losses import *
 from .sampler import *
 
 

@@ -11,10 +11,10 @@ tar -xf office_home.tar.gz
 
 for dataset in Art Clipart Product "Real World"; do
     subfolders=($(ls "$dataset"))
-    rm -f "$dataset.txt"
+    rm -f "$dataset.csv"
     for ((i = 0; i < ${#subfolders[@]}; ++i)); do
         for file in $(ls "$dataset/${subfolders[$i]}"); do
-            echo "$dataset/${subfolders[$i]}/$file $i" >> "$dataset.txt"
+            echo "\"$dataset/${subfolders[$i]}/$file\",$i" >> "$dataset.csv"
         done
     done
 done
