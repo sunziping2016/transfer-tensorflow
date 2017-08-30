@@ -1,6 +1,16 @@
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
+
+def py_func(func, inp, Tout, stateful=True, name=None, grad=None):
+    ### Need to generate a unique name to avoid duplicates:
+    rnd_name = 'PyFuncGrad' + str(np.random.randint(0, 1E+8))
+    tf.RegisterGradient(rnd_name)(grad)
+    g = tf.get_default_graph()
+    with g.gradient_override_map({"PyFunc": rnd_name}):
+        return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
+
+
 def gradient_lr(self, x, low=0.0, high=1.0, max_iter=2000.0, alpha=10.0):
     height = high - low
     progress = tf.minimum(1.0, tf.cast(self.global_step, tf.float32) / max_iter)
