@@ -1,9 +1,8 @@
 import os
 import argparse
 import sys
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
-from core import mmd_losses, samplers
 from utils import *
 
 
@@ -13,13 +12,27 @@ def main(args):
     tf.gfile.MakeDirs(args.log_dir)
     transforms = [
         to_tensor(3),
-        scale([256, 256])
+        scale([256, 256]),
+        central_crop(227, 227)
     ]
-    batch, classes = batch_input_from_csv(args.source, transform_image=transforms, batch_size=10, shuffle=False)
+    batch, classes = batch_input_from_csv(args.source, transform_image=transforms, batch_size=100, shuffle=True)
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        tf.train.queue_runner.start_queue_runners()
-        print(sess.run(batch))
+        coord = tf.train.Coordinator()
+        threads = tf.train.queue_runner.start_queue_runners(coord=coord)
+        import numpy as np
+        images = sess.run(batch[0]).astype(np.uint8)
+        coord.request_stop()
+        coord.join(threads)
+        import matplotlib.pyplot as plt
+        import matplotlib.gridspec as gridspec
+        gs = gridspec.GridSpec(10, 10)
+        for i in range(100):
+            ax = plt.subplot(gs[i])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(images[i])
+        plt.show()
 
 
 if __name__ == '__main__':

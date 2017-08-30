@@ -5,9 +5,7 @@ import tensorflow as tf
 
 def chained_call(funcs, x):
     for func in funcs:
-        print(x)
         x = func(x)
-    print(x)
     return x
 
 
