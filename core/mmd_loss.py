@@ -1,4 +1,3 @@
-import collections
 import tensorflow as tf
 from .sampler import random_sampler
 
@@ -31,27 +30,23 @@ def mmd_loss(source, target, sampler=random_sampler, kernel_mul=2.0, kernel_num=
 
 
 def multiple_mmd_loss(source_list, target_list, samplers=random_sampler, kernel_muls=2.0, kernel_nums=5, sigmas=None):
-    if not isinstance(samplers, collections.Iterable):
+    if not hasattr(samplers, '__iter__'):
         samplers = (samplers,) * len(source_list)
-    if not isinstance(kernel_muls, collections.Iterable):
+    if not hasattr(kernel_muls, '__iter__'):
         kernel_muls = (kernel_muls,) * len(source_list)
-    if not isinstance(kernel_muls, collections.Iterable):
-        kernel_muls = (kernel_muls,) * len(source_list)
-    if not isinstance(kernel_nums, collections.Iterable):
+    if not hasattr(kernel_nums, '__iter__'):
         kernel_nums = (kernel_nums,) * len(source_list)
-    if not isinstance(sigmas, collections.Iterable):
+    if not hasattr(sigmas, '__iter__'):
         sigmas = (sigmas,) * len(source_list)
     return sum([mmd_loss(*i) for i in zip(source_list, target_list, samplers, kernel_muls, kernel_nums, sigmas)])
 
 
 def jmmd_loss(source_list, target_list, sampler=random_sampler, kernel_muls=2.0, kernel_nums=5, sigmas=None):
-    if not isinstance(kernel_muls, collections.Iterable):
+    if not hasattr(kernel_muls, '__iter__'):
         kernel_muls = (kernel_muls,) * len(source_list)
-    if not isinstance(kernel_muls, collections.Iterable):
-        kernel_muls = (kernel_muls,) * len(source_list)
-    if not isinstance(kernel_nums, collections.Iterable):
+    if not hasattr(kernel_nums, '__iter__'):
         kernel_nums = (kernel_nums,) * len(source_list)
-    if not isinstance(sigmas, collections.Iterable):
+    if not hasattr(sigmas, '__iter__'):
         sigmas = (sigmas,) * len(source_list)
     source_num, target_num = tf.shape(source_list[0])[0], tf.shape(target_list[0])[0]
     kernels = sum([gaussian_kernel(*i) for i in zip(source_list, target_list, kernel_muls, kernel_nums, sigmas)])
