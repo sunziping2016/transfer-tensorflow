@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.python.framework import ops
-from utils.ops_utils import *
+from utils.ops_utils import py_func
 
 
 def gradient_lr(self, x, low=0.0, high=1.0, max_iter=2000.0, alpha=10.0):
