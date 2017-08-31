@@ -17,7 +17,6 @@ def conv2d(x, in_channels, out_channels, kernel_size, stride=1,
             x = tf.pad(x, [[0, 0], [padding[0], padding[0]], [padding[1], padding[1]], [0, 0]])
         if kernel_initializer is None:
             kernel_initializer = variance_scaling_initializer(factor=float(groups), mode='FAN_AVG')
-        n = kernel_size[0] * kernel_size[1] * out_channels
         kernel = tf.get_variable('weight', [*kernel_size,
                                  in_channels // groups, out_channels],
                                  initializer=kernel_initializer)
@@ -54,10 +53,10 @@ def batch_norm(x, train, eps=1e-05, decay=0.9, affine=True, name=None):
                                           trainable=False)
 
         def mean_var_with_update():
-            mean, variance = tf.nn.moments(x, tf.shape(x)[:-1], name='moments')
-            with tf.control_dependencies([assign_moving_average(moving_mean, mean, decay),
-                                          assign_moving_average(moving_variance, variance, decay)]):
-                return tf.identity(mean), tf.identity(variance)
+            batch_mean, batch_variance = tf.nn.moments(x, tf.shape(x)[:-1], name='moments')
+            with tf.control_dependencies([assign_moving_average(moving_mean, batch_mean, decay),
+                                          assign_moving_average(moving_variance, batch_variance, decay)]):
+                return tf.identity(batch_mean), tf.identity(batch_variance)
         mean, variance = tf.cond(train, mean_var_with_update, lambda: (moving_mean, moving_variance))
         if affine:
             beta = tf.get_variable('beta', params_shape,
