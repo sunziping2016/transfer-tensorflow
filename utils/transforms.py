@@ -21,5 +21,5 @@ def central_crop(target_height, target_width):
 
 def random_crop(target_height, target_width):
     def hook(image):
-        return tf.random_crop([target_height, target_width, 3])
+        return tf.random_crop(image, [target_height, target_width, 3])
     return hook
