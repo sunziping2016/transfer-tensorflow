@@ -26,21 +26,23 @@ def extract_model(prototxt, caffemodel, output):
         params = net.params[name]
         if name.startswith('fc'):
             if first_fc:
-                model[name + '/weights'] = params[0].data \
+                model[name + '/weight'] = params[0].data \
                     .reshape(4096, 256, 6, 6).transpose(2, 3, 1, 0).reshape(9216, 4096)
                 first_fc = False
             else:
-                model[name + '/weights'] = params[0].data.transpose(1, 0)
+                model[name + '/weight'] = params[0].data.transpose(1, 0)
             if len(params) > 1:
-                model[name + '/biases'] = params[1].data
+                model[name + '/bias'] = params[1].data
         elif name.startswith('conv'):
             if first_conv:
-                model[name + '/weights'] = params[0].data[:, ::-1].transpose(2, 3, 1, 0)
+                model[name + '/weight'] = params[0].data[:, ::-1].transpose(2, 3, 1, 0)
                 first_conv = False
             else:
-                model[name + '/weights'] = params[0].data.transpose(2, 3, 1, 0)
+                model[name + '/weight'] = params[0].data.transpose(2, 3, 1, 0)
             if len(params) > 1:
-                model[name + '/biases'] = params[1].data
+                model[name + '/bias'] = params[1].data
+        else:
+            print('Unknown layer: %s' % name, file=sys.stderr)
     pickle.dump(model, open(output, 'wb'))
 
 if __name__ == '__main__':

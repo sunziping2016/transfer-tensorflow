@@ -1,14 +1,13 @@
 import sys
 import time
 import hashlib
-from six.moves import urllib
+from future.standard_library import install_aliases
+install_aliases()
+from urllib.request import urlretrieve
 
 
 def download(filename, url):
     def reporthook(count, block_size, total_size):
-        """
-        From http://blog.moleculea.com/2012/10/04/urlretrieve-progres-indicator/
-        """
         global start_time
         if count == 0:
             start_time = time.time()
@@ -20,7 +19,7 @@ def download(filename, url):
         sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
                          (percent, progress_size / (1024 * 1024), speed, duration))
         sys.stdout.flush()
-    urllib.request.urlretrieve(url, filename, reporthook)
+    urlretrieve(url, filename, reporthook)
     print()
 
 

@@ -3,43 +3,74 @@ from tensorflow.python.training.moving_averages import assign_moving_average
 from tensorflow.contrib.layers import variance_scaling_initializer
 
 
-def conv2d(x, in_channels, out_channels, kernel_size, stride=1,
-           padding=0, groups=1, bias=True, kernel_initializer=None,
-           bias_initializer=tf.zeros_initializer, name=None):
-    with tf.variable_scope(name, default_name='Conv2d'):
+class dummy_context_mgr:
+    def __enter__(self):
+        return None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+
+def conv_nd(x, n, in_channels, out_channels, kernel_size, stride=1, padding=0,
+            dilation=1, groups=1, bias=True, kernel_initializer=None,
+            bias_initializer=None, name=None):
+    with tf.variable_scope(name, default_name='Conv%dd' % n):
         if not hasattr(kernel_size, '__iter__'):
-            kernel_size = (kernel_size, kernel_size)
+            kernel_size = (kernel_size,) * n
         if not hasattr(padding, '__iter__'):
-            padding = (padding, padding)
+            padding = (padding,) * n
         if not hasattr(stride, '__iter__'):
-            stride = (stride, stride)
+            stride = (stride,) * n
+        if not hasattr(dilation, '__iter__'):
+            dilation = (dilation,) * n
         if padding[0] != 0 or padding[1] != 0:
-            x = tf.pad(x, [[0, 0], [padding[0], padding[0]], [padding[1], padding[1]], [0, 0]])
+            x = tf.pad(x, [[0, 0], *zip(padding, padding), [0, 0]])
         if kernel_initializer is None:
             kernel_initializer = variance_scaling_initializer(factor=float(groups), mode='FAN_AVG')
-        kernel = tf.get_variable('weight', [*kernel_size,
-                                 in_channels // groups, out_channels],
+        if bias_initializer is None:
+            bias_initializer = tf.zeros_initializer
+        kernel = tf.get_variable('weight', [*kernel_size, in_channels // groups,
+                                            out_channels] if callable(kernel_initializer) else None,
                                  initializer=kernel_initializer)
-        x = tf.concat([tf.nn.conv2d(*group, [1, stride, stride, 1], padding='VALID')
-                       for group in zip(tf.split(x, groups, axis=3),
-                                        tf.split(kernel, groups, axis=3))],
-                      axis=3)
+        # For better graph layout
+        if groups != 1:
+            x = tf.concat([
+                tf.nn.convolution(*p, 'VALID', stride, dilation, name='conv%dd_%d' % (n, i + 1))
+                for i, p in enumerate(zip(tf.split(x, groups, axis=-1, name='split_input'),
+                                          tf.split(kernel, groups, axis=-1, name='split_kernel')))
+            ], axis=-1)
+        else:
+            x = tf.nn.convolution(x, kernel, 'VALID', stride, dilation, name='conv%dd' % n)
         if bias:
-            biases = tf.get_variable('bias', [out_channels],
+            biases = tf.get_variable('bias', [out_channels] if callable(kernel_initializer) else None,
                                      initializer=bias_initializer)
             x = tf.nn.bias_add(x, biases)
         return x
 
 
-def relu(x, leakiness=0.0):
+def conv1d(x, *args, **kwargs):
+    return conv_nd(x, 1, *args, **kwargs)
+
+
+def conv2d(x, *args, **kwargs):
+    return conv_nd(x, 2, *args, **kwargs)
+
+
+def conv3d(x, *args, **kwargs):
+    return conv_nd(x, 3, *args, **kwargs)
+
+
+def relu(x, leakiness=0.0, name=None):
     if leakiness > 0.0:
-        return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
+        with tf.variable_scope(name, default_name='LeakyRelu'):
+            return tf.where(tf.less(x, 0.0), leakiness * x, x)
     else:
-        return tf.nn.relu(x, name='relu')
+        return tf.nn.relu(x, name)
 
 
-def dropout(x, train, drop_rate=0.5):
-    return tf.cond(train, lambda: tf.nn.dropout(x, 1 - drop_rate), lambda: x)
+def dropout(x, train, drop_rate=0.5, name=None):
+    with tf.variable_scope(name, default_name='Dropout'):
+        return tf.nn.dropout(x, 1 - tf.cast(train, tf.float32) * drop_rate)
 
 
 def batch_norm(x, train, eps=1e-05, decay=0.9, affine=True, name=None):
@@ -69,16 +100,87 @@ def batch_norm(x, train, eps=1e-05, decay=0.9, affine=True, name=None):
         return x
 
 
-def fc(x, in_channels, out_channels, bias=True, weight_initializer=None,
-       bias_initializer=tf.zeros_initializer, name=None):
-    with tf.variable_scope(name, default_name='FullConnected'):
+def max_pool(x, kernel_size, strides, name=None):
+    if not hasattr(kernel_size, '__iter__'):
+        kernel_size = (kernel_size,) * 2
+    if not hasattr(strides, '__iter__'):
+        strides = (strides,) * 2
+    return tf.nn.max_pool(x, [1, *kernel_size, 1], [1, *strides, 1], 'VALID', name=name)
+
+
+def linear(x, in_channels, out_channels, bias=True, weight_initializer=None,
+           bias_initializer=None, name=None):
+    with tf.variable_scope(name, default_name='Linear'):
         if weight_initializer is None:
             weight_initializer = variance_scaling_initializer(1.0, mode='FAN_AVG')
-        w = tf.get_variable('weight', [in_channels, out_channels],
+        if bias_initializer is None:
+            bias_initializer = tf.zeros_initializer
+        w = tf.get_variable('weight', [in_channels, out_channels] if callable(weight_initializer) else None,
                             initializer=weight_initializer)
         x = tf.matmul(x, w)
         if bias:
-            b = tf.get_variable('bias', [out_channels],
+            b = tf.get_variable('bias', [out_channels] if callable(bias_initializer) else None,
                                 initializer=bias_initializer)
             x = tf.nn.bias_add(x, b)
         return x
+
+
+def make_layer(layer):
+    def construct(*args, **kwargs):
+        def call(*inputs):
+            return layer(*inputs, *args, **kwargs)
+        return call
+    return construct
+
+
+def sequential(x, layers=(), name=None):
+    with tf.variable_scope(name) if name is not None else dummy_context_mgr():
+        for layer in layers:
+            x = layer(x)
+        return x
+
+
+class Sequential(list):
+    def __init__(self, layers=(), name=None):
+        super().__init__(layers)
+        self.name = name
+
+    def __call__(self, *args):
+        return sequential(*args, layers=self, name=self.name)
+
+ConvND = make_layer(conv_nd)
+Conv1D = make_layer(conv1d)
+Conv2D = make_layer(conv2d)
+Conv3D = make_layer(conv3d)
+ReLU = make_layer(relu)
+Dropout = make_layer(dropout)
+BatchNorm = make_layer(batch_norm)
+LocalResponseNormalization = make_layer(tf.nn.local_response_normalization)
+MaxPool = make_layer(max_pool)
+Linear = make_layer(linear)
+Reshape = make_layer(tf.reshape)
+
+__all__ = [
+    'conv_nd',
+    'conv1d',
+    'conv2d',
+    'conv3d',
+    'relu',
+    'dropout',
+    'batch_norm',
+    'sequential',
+    'max_pool',
+    'linear',
+    'ConvND',
+    'Conv1D',
+    'Conv2D',
+    'Conv3D',
+    'ReLU',
+    'Dropout',
+    'BatchNorm',
+    'Linear',
+    'Sequential',
+    'LocalResponseNormalization',
+    'MaxPool',
+    'Reshape'
+]
