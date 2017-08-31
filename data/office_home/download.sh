@@ -5,6 +5,7 @@ set -e
 # From https://drive.google.com/file/d/0B81rNlvomiwed0V1YUxQdC1uOTg
 # However, Google Drive always gives an annoying confirmation page
 # Bypass it with my own file server temporarily.
+pushd "$(dirname "$0")"
 wget -c "https://file.szp.io/f/492d03c9c9/?dl=1" -O office_home.tar.gz
 echo "db8d358e8c74749baf5230a9d01a4d8d7aad9adb  office_home.tar.gz" | sha1sum -c -
 tar -xf office_home.tar.gz
@@ -18,3 +19,4 @@ for dataset in Art Clipart Product "Real World"; do
         done
     done
 done
+popd
