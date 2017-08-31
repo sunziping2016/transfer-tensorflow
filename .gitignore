@@ -103,6 +103,7 @@ ENV/
 *.pkl
 *.caffemodel
 *.prototxt
+*.tar.gz
 data/office/*
 data/office_home/*
 !data/office/download.sh

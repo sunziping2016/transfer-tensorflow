@@ -26,3 +26,8 @@ def download(filename, url):
 def check(filename, sha1):
     with open(filename, 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest() == sha1
+
+__all__ = [
+    'download',
+    'check'
+]
