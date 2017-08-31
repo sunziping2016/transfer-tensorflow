@@ -12,11 +12,10 @@ def conv2d(x, name, in_channels, out_channels, kernel_size,
                                  in_channels // groups, out_channels],
                                  initializer=tf.random_normal_initializer(
                                     stddev=np.sqrt(2.0/n)))
-        x = tf.concat([tf.nn.conv2d(*group, [1, 1, 1, 1], padding='VALID')
-                          for group in zip(tf.split(output, groups, axis=3), 
+        x = tf.concat([tf.nn.conv2d(*group, [1, stride, stride, 1], padding='SAME')
+                          for group in zip(tf.split(x, groups, axis=3), 
                                            tf.split(kernel, groups, axis=3))], 
                           axis=3)
-        x = tf.nn.conv2d(x, kernel, [1, stride, stride, 1], padding='SAME')
         if bias:
             biases = tf.get_variable('biases', [out_channels],
                                      initializer=tf.zeros_initializer)
