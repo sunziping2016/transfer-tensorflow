@@ -1,46 +1,25 @@
 import os
 import sys
 import argparse
-import time
-import hashlib
-from six.moves import urllib
+from utils import download, check
 
-caffemodel_prototxt = 'https://raw.githubusercontent.com/BVLC/caffe/master/models/bvlc_alexnet/deploy.prototxt'
-caffemodel_url = 'http://dl.caffe.berkeleyvision.org/bvlc_alexnet.caffemodel'
-caffemodel_sha1 = '9116a64c0fbe4459d18f4bb6b56d647b63920377'
-
-
-def download(filename, url):
-    def reporthook(count, block_size, total_size):
-        """
-        From http://blog.moleculea.com/2012/10/04/urlretrieve-progres-indicator/
-        """
-        global start_time
-        if count == 0:
-            start_time = time.time()
-            return
-        duration = (time.time() - start_time) or 0.01
-        progress_size = int(count * block_size)
-        speed = int(progress_size / (1024 * duration))
-        percent = int(count * block_size * 100 / total_size)
-        sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
-                         (percent, progress_size / (1024 * 1024), speed, duration))
-        sys.stdout.flush()
-
-    urllib.request.urlretrieve(url, filename, reporthook)
-    print()
+caffemodels = {
+    'alexnet': (
+        'https://raw.githubusercontent.com/BVLC/caffe/master/models/bvlc_alexnet/deploy.prototxt',
+        'http://dl.caffe.berkeleyvision.org/bvlc_alexnet.caffemodel',
+        '9116a64c0fbe4459d18f4bb6b56d647b63920377',
+        'bvlc_alexnet.prototxt',
+        'bvlc_alexnet.caffemodel',
+        '../models/caffe_alexnet.pkl'
+    )
+}
 
 
-def check(filename, sha1):
-    with open(filename, 'rb') as f:
-        return hashlib.sha1(f.read()).hexdigest() == sha1
-
-
-def extract_model(prototxt, model, output):
+def extract_model(prototxt, caffemodel, output):
     os.environ['GLOG_minloglevel'] = '2'
     import caffe
     import pickle
-    net = caffe.Net(prototxt, model, caffe.TEST)
+    net = caffe.Net(prototxt, caffemodel, caffe.TEST)
     model = {}
     first_conv, first_fc = True, True
     for name in net.params:
@@ -65,26 +44,30 @@ def extract_model(prototxt, model, output):
     pickle.dump(model, open(output, 'wb'))
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Download trained Caffe Alexnet and convert it to TensorFlow model')
-    parser.add_argument('--prototxt', type=str, default=os.path.join(os.path.dirname(__file__), 'bvlc_alexnet.prototxt'),
-                        help='download caffe prototxt to or load it from this path')
-    parser.add_argument('--model', type=str, default=os.path.join(os.path.dirname(__file__), 'bvlc_alexnet.caffemodel'),
-                        help='download caffe model to or load it from this path')
-    parser.add_argument('-o', dest='output', type=str,
-                        default=os.path.join(os.path.dirname(__file__), '../models/caffe_alexnet.pkl'),
-                        help='save tensorflow model to this path')
+    parser = argparse.ArgumentParser(description='Download trained Caffe model and convert it to TensorFlow model')
+    parser.add_argument('--prototxt', type=str, default='', help='download Caffe prototxt to or load it from this path')
+    parser.add_argument('--caffemodel', type=str, default='', help='download Caffe model to or load it from this path')
+    parser.add_argument('-o', dest='output', type=str, default='', help='save TensorFlow model to this path')
+    parser.add_argument('--model', type=str, choices=list(caffemodels.keys()),
+                        default='alexnet', help='Model to download')
     args = parser.parse_args()
+    if len(args.prototxt) == 0:
+        args.prototxt = os.path.join(os.path.dirname(__file__), caffemodels[args.model][3])
+    if len(args.caffemodel) == 0:
+        args.caffemodel = os.path.join(os.path.dirname(__file__), caffemodels[args.model][4])
+    if len(args.output) == 0:
+        args.output = os.path.join(os.path.dirname(__file__), caffemodels[args.model][5])
 
     if not os.path.exists(args.prototxt):
         print('Downloading prototxt...')
-        download(args.prototxt, caffemodel_prototxt)
+        download(args.prototxt, caffemodels[args.model][0])
 
-    if not os.path.exists(args.model):
+    if not os.path.exists(args.caffemodel):
         print('Downloading model...')
-        download(args.model, caffemodel_url)
-        if not check(args.model, sha1=caffemodel_sha1):
+        download(args.caffemodel, caffemodels[args.model][1])
+        if not check(args.caffemodel, sha1=caffemodels[args.model][2]):
             print('ERROR: model did not download correctly! Run this again.')
             sys.exit(1)
 
     print('Extracting model...')
-    extract_model(args.prototxt, args.model, args.output)
+    extract_model(args.prototxt, args.caffemodel, args.output)
