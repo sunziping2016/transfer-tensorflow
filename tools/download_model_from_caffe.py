@@ -14,6 +14,7 @@ caffe_models = {
         '../models/caffe_alexnet.pkl',
         256 # First fc input channel size
     ),
+    # From https://github.com/KaimingHe/deep-residual-networks
     'resnet50': (
         'https://file.szp.io/f/d367d253db/?dl=1',
         'https://file.szp.io/f/80094d907e/?dl=1',
@@ -57,18 +58,18 @@ def extract_model(prototxt, model, output, first_fc_in):
             if first_fc:
                 shape = (params[0].data.shape[0], first_fc_in,
                          *(int(sqrt(params[0].data.shape[1] // first_fc_in) + 0.5),) * 2)
-                model[name + '/weight'] = params[0].data.reshape(*shape).transpose(2, 3, 1, 0).reshape(-1, shape[0])
+                model[name + '/weight'] = params[0].data.reshape(*shape).transpose([2, 3, 1, 0]).reshape(-1, shape[0])
                 first_fc = False
             else:
-                model[name + '/weight'] = params[0].data.transpose(1, 0)
+                model[name + '/weight'] = params[0].data.transpose([1, 0])
             if len(params) > 1:
                 model[name + '/bias'] = params[1].data
         elif name.startswith('conv') or name.startswith('res'):
             if first_conv:
-                model[name + '/weight'] = params[0].data[:, ::-1].transpose(2, 3, 1, 0)
+                model[name + '/weight'] = params[0].data[:, ::-1].transpose([2, 3, 1, 0])
                 first_conv = False
             else:
-                model[name + '/weight'] = params[0].data.transpose(2, 3, 1, 0)
+                model[name + '/weight'] = params[0].data.transpose([2, 3, 1, 0])
             if len(params) > 1:
                 model[name + '/bias'] = params[1].data
         elif name.startswith('bn'):
@@ -83,11 +84,11 @@ def extract_model(prototxt, model, output, first_fc_in):
     pickle.dump(model, open(output, 'wb'))
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Download trained Caffe model and convert it to TensorFlow model')
+    parser = argparse.ArgumentParser(description='Download trained Caffe model and convert it to NumPy pickle')
     parser.add_argument('--prototxt', type=str, default='', help='download Caffe prototxt to or load it from this path')
     parser.add_argument('--caffemodel', type=str, default='', help='download Caffe model to or load it from this path')
-    parser.add_argument('-o', dest='output', type=str, default='', help='save TensorFlow model to this path')
-    parser.add_argument('--model', type=str, choices=list(caffe_models.keys()),
+    parser.add_argument('-o', dest='output', type=str, default='', help='save NumPy pickle to this path')
+    parser.add_argument('-m', dest='model', type=str, choices=list(caffe_models.keys()),
                         default='alexnet', help='Model to download')
     args = parser.parse_args()
     if len(args.prototxt) == 0:
