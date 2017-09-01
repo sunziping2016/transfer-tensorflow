@@ -26,7 +26,7 @@ def extract_binaryproto(proto, output):
     blob = BlobProto()
     data = open(proto, 'rb').read()
     blob.ParseFromString(data)
-    np.save(output, np.array(blobproto_to_array(blob)).squeeze(0).transpose([1, 2, 0]))
+    np.save(output, np.array(blobproto_to_array(blob)).squeeze(0).transpose([1, 2, 0]).astype(np.float32))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download Caffe mean file and convert it to NumPy pickle')

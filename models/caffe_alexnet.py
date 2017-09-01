@@ -111,3 +111,7 @@ def alexnet(images, train, fc=3, pretrained=False, caffe_initializer=False):
         ], name='fc8'))
 
     return net(images)
+
+__all__ = [
+    'alexnet'
+]

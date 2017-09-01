@@ -4,6 +4,7 @@ import sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 from utils import *
+from models import *
 
 
 def main(args):
@@ -12,8 +13,9 @@ def main(args):
     tf.gfile.MakeDirs(args.log_dir)
     transforms = [
         to_tensor(3),
-        scale([256, 256]),
-        central_crop(227, 227)
+        scale(256),
+        normalize(mean_file_loader('ilsvrc_2012')),
+        central_crop(227)
     ]
     batch, classes = batch_input_from_csv(args.source, transform_image=transforms, batch_size=100, shuffle=True)
     with tf.Session() as sess:

@@ -1,4 +1,5 @@
-from .caffe_alexnet import alexnet
+from .caffe_alexnet import *
+from .caffe_mean_file import *
 
 # Map from model name to (constructor, output feature numbers of fc, mean file)
 base_models = {

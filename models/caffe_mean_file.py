@@ -9,3 +9,7 @@ mean_files = {
 
 def mean_file_loader(mean_file):
     return np.load(os.path.join(os.path.dirname(__file__), mean_files[mean_file]))
+
+__all__ = [
+    'mean_file_loader'
+]

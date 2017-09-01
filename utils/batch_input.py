@@ -44,3 +44,8 @@ def batch_input_from_csv(filename, batch_size, transform_image=None, transform_l
     return batch_input(filenames, labels, batch_size, transform_image, transform_label,
                        shuffle, os.path.dirname(filename), num_readers, num_preprocess_threads), \
            tf.reduce_max(labels) + 1
+
+__all__ = [
+    'batch_input',
+    'batch_input_from_csv'
+]
