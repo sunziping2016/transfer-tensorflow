@@ -1,6 +1,7 @@
 import tensorflow as tf
 import pickle
 import os
+from utils.layers_utils import make_layer
 from utils.layers import *
 
 
@@ -112,6 +113,9 @@ def alexnet(images, train, fc=3, pretrained=False, caffe_initializer=False):
 
     return net(images)
 
+Alexnet = make_layer(alexnet)
+
 __all__ = [
-    'alexnet'
+    'alexnet',
+    'Alexnet'
 ]

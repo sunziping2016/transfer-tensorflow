@@ -1,51 +1,52 @@
 import tensorflow as tf
+from .layers_utils import *
 
 
-def to_tensor(channels=None):
-    def callback(contents):
-        return tf.image.decode_jpeg(contents, channels)
-    return callback
+def to_tensor(x, channels=None):
+    return tf.image.decode_jpeg(x, channels)
 
 
-def scale(height, width=None, method=tf.image.ResizeMethod.BILINEAR, align_corners=False):
+def scale(x, height, width=None, method=tf.image.ResizeMethod.BILINEAR, align_corners=False):
     if width is None:
         width = height
-
-    def callback(images):
-        return tf.image.resize_images(images, [height, width], method, align_corners)
-    return callback
+    return tf.image.resize_images(x, [height, width], method, align_corners)
 
 
-def central_crop(height, width=None):
+def central_crop(x, height, width=None):
     if width is None:
         width = height
-
-    def callback(image):
-        return tf.image.resize_image_with_crop_or_pad(image, height, width)
-    return callback
+    return tf.image.resize_image_with_crop_or_pad(x, height, width)
 
 
-def random_crop(height, width=None):
+def random_crop(x, height, width=None):
     if width is None:
         width = height
-
-    def callback(image):
-        return tf.random_crop(image, [height, width, 3])
-    return callback
+    return tf.random_crop(x, [height, width, 3])
 
 
-def normalize(mean, std=None):
-    def callback(image):
-        image -= tf.convert_to_tensor(mean, name='mean')
-        if std is not None:
-            image /= tf.convert_to_tensor(std, name='std')
-        return image
-    return callback
+def normalize(x, mean, std=None):
+    x -= tf.convert_to_tensor(mean, name='mean')
+    if std is not None:
+        x /= tf.convert_to_tensor(std, name='std')
+    return x
+
+ToTensor = make_layer(to_tensor)
+Scale = make_layer(scale)
+CentralCrop = make_layer(central_crop)
+RandomCrop = make_layer(random_crop)
+Normalize = make_layer(normalize)
+RandomHorizontalFlip = make_layer(tf.image.random_flip_left_right)
 
 __all__ = [
     'to_tensor',
     'scale',
     'central_crop',
     'random_crop',
-    'normalize'
+    'normalize',
+    'ToTensor',
+    'Scale',
+    'CentralCrop',
+    'RandomCrop',
+    'Normalize',
+    'RandomHorizontalFlip'
 ]

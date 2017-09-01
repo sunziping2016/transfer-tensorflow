@@ -1,8 +1,6 @@
 import os
-os.environ['GLOG_minloglevel'] = '2'
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import tensorflow as tf
 import models
 import numpy as np
@@ -27,7 +25,7 @@ if __name__ == '__main__':
         images: data,
         train: False
     })
-    caffe_data = data.transpose(0, 3, 1, 2)[:, ::-1]
+    caffe_data = data.transpose([0, 3, 1, 2])[:, ::-1]
     net = caffe.Net(args.prototxt, args.model, caffe.TEST)
     net.blobs['data'].reshape(*caffe_data.shape)
     net.blobs['data'].data[:] = caffe_data

@@ -1,14 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.training.moving_averages import assign_moving_average
 from tensorflow.contrib.layers import variance_scaling_initializer
-
-
-class dummy_context_mgr:
-    def __enter__(self):
-        return None
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        return False
+from .layers_utils import *
 
 
 def conv_nd(x, n, in_channels, out_channels, kernel_size, stride=1, padding=0,
@@ -125,16 +118,8 @@ def linear(x, in_channels, out_channels, bias=True, weight_initializer=None,
         return x
 
 
-def make_layer(layer):
-    def construct(*args, **kwargs):
-        def call(*inputs):
-            return layer(*inputs, *args, **kwargs)
-        return call
-    return construct
-
-
 def sequential(x, layers=(), name=None):
-    with tf.variable_scope(name) if name is not None else dummy_context_mgr():
+    with tf.variable_scope(name) if name is not None else DummyContextMgr():
         for layer in layers:
             x = layer(x)
         return x
@@ -148,6 +133,10 @@ class Sequential(list):
     def __call__(self, *args):
         return sequential(*args, layers=self, name=self.name)
 
+
+def conditional(x, cond, branch1, branch2, name=None):
+    return tf.cond(cond, lambda: branch1(x), lambda: branch2(x), name=name)
+
 ConvND = make_layer(conv_nd)
 Conv1D = make_layer(conv1d)
 Conv2D = make_layer(conv2d)
@@ -159,6 +148,8 @@ LocalResponseNormalization = make_layer(tf.nn.local_response_normalization)
 MaxPool = make_layer(max_pool)
 Linear = make_layer(linear)
 Reshape = make_layer(tf.reshape)
+Conditional = make_layer(conditional)
+DoNothing = make_layer(tf.identity)
 
 __all__ = [
     'conv_nd',
@@ -171,6 +162,7 @@ __all__ = [
     'sequential',
     'max_pool',
     'linear',
+    'conditional',
     'ConvND',
     'Conv1D',
     'Conv2D',
@@ -182,5 +174,6 @@ __all__ = [
     'Sequential',
     'LocalResponseNormalization',
     'MaxPool',
-    'Reshape'
+    'Reshape',
+    'Conditional'
 ]

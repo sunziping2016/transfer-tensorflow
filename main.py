@@ -1,45 +1,70 @@
 import os
 import argparse
 import sys
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
-from utils import *
+from utils.layers import Sequential, Conditional, Linear
+from utils.datasets import *
+from utils.loader import *
+from utils.transforms import *
 from models import *
+from core import *
 
 
 def main(args):
     if tf.gfile.Exists(args.log_dir):
         tf.gfile.DeleteRecursively(args.log_dir)
     tf.gfile.MakeDirs(args.log_dir)
-    transforms = [
-        to_tensor(3),
-        scale(256),
-        normalize(mean_file_loader('ilsvrc_2012')),
-        central_crop(227)
+
+    train = tf.placeholder_with_default(False, [], name='train')
+    transforms = Sequential([
+        ToTensor(3),
+        Scale(256),
+        Normalize(mean_file_loader('ilsvrc_2012')),
+        Conditional(
+            train,
+            Sequential([
+                RandomCrop(227),
+                RandomHorizontalFlip()
+            ]),
+            CentralCrop(227)
+        ),
+    ], name='Transforms')
+    source, target = [
+        load_data(CSVImageLabelDataset(d), batch_size=args.batch_size, transforms=(transforms,),
+                  name=n) for d, n in zip((args.source, args.target), ('SourceDataProvider', 'TargetDataProvider'))
     ]
-    batch, classes = batch_input_from_csv(args.source, transform_image=transforms, batch_size=100, shuffle=True)
+    base_model = Alexnet(train, fc=-1, pretrained=True)
+    last_fc_source, last_fc_target = Linear(4096, 31), Linear(4096, 31)
+    inputs = tf.concat([source[0], target[0]], axis=0)
+    features = base_model(inputs)
+    source_feature, target_feature = tf.split(features, 2)
+    source_logits, target_logits = last_fc_source(source_feature), last_fc_target(target_feature)
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=source[1], logits=source_logits, name='xentropy')
+    cross_entropy_loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
+    mmd_loss = multiple_mmd_loss([source_feature, source_logits], [target_feature, target_logits])
+    loss = cross_entropy_loss + mmd_loss
+    correct = tf.nn.in_top_k(target_logits, target[1], 1)
+    accuracy = tf.reduce_sum(tf.cast(correct, tf.int32))
+    optimizer = tf.train.GradientDescentOptimizer(args.learning_rate)
+    global_step = tf.Variable(0, name='global_step', trainable=False)
+    train_op = optimizer.minimize(loss, global_step=global_step)
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         coord = tf.train.Coordinator()
         threads = tf.train.queue_runner.start_queue_runners(coord=coord)
-        import numpy as np
-        images = sess.run(batch[0]).astype(np.uint8)
+        for _ in range(args.max_steps):
+            _, loss_value, accuracy_value = sess.run([train_op, loss, accuracy], feed_dict={train: True})
+            print('loss: %s\taccuracy: %s' % (loss_value, accuracy_value))
         coord.request_stop()
         coord.join(threads)
-        import matplotlib.pyplot as plt
-        import matplotlib.gridspec as gridspec
-        gs = gridspec.GridSpec(10, 10)
-        for i in range(100):
-            ax = plt.subplot(gs[i])
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.imshow(images[i])
-        plt.show()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size.')
+    parser.add_argument('--learning_rate', type=float, default=0.01, help='Initial learning rate.')
+    parser.add_argument('--max_steps', type=int, default=2000, help='Number of steps to run trainer.')
     parser.add_argument('--source', type=str, default=os.path.join(os.path.dirname(__file__), 'data/office/amazon.csv'),
                         help='Source list file of which every lines are space-separated image paths and labels.')
     parser.add_argument('--target', type=str, default=os.path.join(os.path.dirname(__file__), 'data/office/amazon.csv'),
