@@ -2,18 +2,20 @@ import os
 import argparse
 import sys
 import tensorflow as tf
-from utils.layers import Sequential, Conditional, Linear
 from utils.datasets import *
 from utils.loader import *
 from utils.transforms import *
 from models import *
 from core import *
+from methods import *
 
 
 def main(args):
     if tf.gfile.Exists(args.log_dir):
         tf.gfile.DeleteRecursively(args.log_dir)
     tf.gfile.MakeDirs(args.log_dir)
+    # Borrow loss weight arguments from args
+    loss_weights = args
 
     train = tf.placeholder_with_default(False, [], name='train')
     transforms = Sequential([
@@ -33,18 +35,16 @@ def main(args):
         load_data(CSVImageLabelDataset(d), batch_size=args.batch_size, transforms=(transforms,),
                   name=n) for d, n in zip((args.source, args.target), ('SourceDataProvider', 'TargetDataProvider'))
     ]
+    # Construct base model
     base_model = Alexnet(train, fc=-1, pretrained=True)
-    last_fc_source, last_fc_target = Linear(4096, 31), Linear(4096, 31)
-    inputs = tf.concat([source[0], target[0]], axis=0)
-    features = base_model(inputs)
-    source_feature, target_feature = tf.split(features, 2)
-    source_logits, target_logits = last_fc_source(source_feature), last_fc_target(target_feature)
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=source[1], logits=source_logits, name='xentropy')
-    cross_entropy_loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
-    mmd_loss = multiple_mmd_loss([source_feature, source_logits], [target_feature, target_logits])
-    loss = cross_entropy_loss + mmd_loss
+    # Prepare input images
+    method = DeepAdaptationNetworks(base_model, 31)
+    # Losses
+    loss, target_logits = method.train((source[0], target[0]), source[1], loss_weights)
+    # Accuracy
     correct = tf.nn.in_top_k(target_logits, target[1], 1)
     accuracy = tf.reduce_sum(tf.cast(correct, tf.int32))
+    # Optimize
     optimizer = tf.train.GradientDescentOptimizer(args.learning_rate)
     global_step = tf.Variable(0, name='global_step', trainable=False)
     train_op = optimizer.minimize(loss, global_step=global_step)
@@ -72,6 +72,8 @@ if __name__ == '__main__':
                              'Labels are only used for evaluation.')
     parser.add_argument('--base_model', type=str, choices=['alexnet'], default='alexnet',
                         help='Basic model to use.')
+    parser.add_argument('--method' type=str, default='deep_adaptation_networks',
+                        help='Algorithm to use')
     parser.add_argument('--loss', type=str, choices=['none', 'mmd', 'jmmd'], default='mmd',
                         help='Loss to apply for transfer learning.')
     parser.add_argument('--sampler', type=str, choices=['none', 'fix', 'random'], default='random',

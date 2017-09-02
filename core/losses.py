@@ -30,18 +30,6 @@ def mmd_loss(source, target, sampler=random_sampler, kernel_mul=2.0, kernel_num=
                - 2 * tf.reduce_sum(kernels[:source_num, source_num:]) / source_num / target_num
 
 
-def multiple_mmd_loss(source_list, target_list, samplers=random_sampler, kernel_muls=2.0, kernel_nums=5, sigmas=None):
-    if not hasattr(samplers, '__iter__'):
-        samplers = (samplers,) * len(source_list)
-    if not hasattr(kernel_muls, '__iter__'):
-        kernel_muls = (kernel_muls,) * len(source_list)
-    if not hasattr(kernel_nums, '__iter__'):
-        kernel_nums = (kernel_nums,) * len(source_list)
-    if not hasattr(sigmas, '__iter__'):
-        sigmas = (sigmas,) * len(source_list)
-    return sum([mmd_loss(*i) for i in zip(source_list, target_list, samplers, kernel_muls, kernel_nums, sigmas)])
-
-
 def jmmd_loss(source_list, target_list, sampler=random_sampler, kernel_muls=2.0, kernel_nums=5, sigmas=None):
     if not hasattr(kernel_muls, '__iter__'):
         kernel_muls = (kernel_muls,) * len(source_list)

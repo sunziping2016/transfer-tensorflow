@@ -3,7 +3,7 @@ from .sampler import *
 
 
 mmd_losses = {
-    'mmd': multiple_mmd_loss,
+    'mmd': mmd_loss,
     'jmmd': jmmd_loss
 }
 
