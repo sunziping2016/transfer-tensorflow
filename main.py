@@ -6,7 +6,6 @@ from utils.datasets import *
 from utils.loader import *
 from utils.transforms import *
 from models import *
-from core import *
 from methods import *
 
 
