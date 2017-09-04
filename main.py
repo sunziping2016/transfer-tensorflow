@@ -63,7 +63,7 @@ def main(args):
         threads = tf.train.queue_runner.start_queue_runners(coord=coord)
         for _ in range(args.max_steps):
             _, loss_value, accuracy_value, step_value = sess.run([train_op, loss, accuracy, step], feed_dict={train: True})
-            print('step: %s\tloss: %s\taccuracy: %s' % (step_value, loss_value, accuracy_value))
+            print('step: %d\tloss: %.3f\taccuracy: %.3f%%' % (step_value, loss_value, accuracy_value / args.batch_size * 100))
         coord.request_stop()
         coord.join(threads)
 
