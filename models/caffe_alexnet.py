@@ -1,7 +1,6 @@
 import tensorflow as tf
 import pickle
 import os
-from utils.layers_utils import make_layer
 from utils.layers import *
 
 
@@ -22,11 +21,11 @@ def alexnet(images, train, fc=3, pretrained=False, caffe_initializer=False):
 
     init = {
         'conv1/weight': tf.random_normal_initializer(stddev=1e-2),
-        'conv1/bias': tf.zeros_initializer,
+        'conv1/bias': tf.zeros_initializer(),
         'conv2/weight': tf.random_normal_initializer(stddev=1e-2),
         'conv2/bias': tf.constant_initializer(0.1),
         'conv3/weight': tf.random_normal_initializer(stddev=1e-2),
-        'conv3/bias': tf.zeros_initializer,
+        'conv3/bias': tf.zeros_initializer(),
         'conv4/weight': tf.random_normal_initializer(stddev=1e-2),
         'conv4/bias': tf.constant_initializer(0.1),
         'conv5/weight': tf.random_normal_initializer(stddev=1e-2),
@@ -36,7 +35,7 @@ def alexnet(images, train, fc=3, pretrained=False, caffe_initializer=False):
         'fc7/weight': tf.random_normal_initializer(stddev=5e-3),
         'fc7/bias': tf.constant_initializer(0.1),
         'fc8/weight': tf.random_normal_initializer(stddev=5e-3),
-        'fc8/bias': tf.zeros_initializer,
+        'fc8/bias': tf.zeros_initializer(),
     }
     if pretrained:
         params = pickle.load(open(os.path.join(os.path.dirname(__file__), 'caffe_alexnet.pkl'), 'rb'))
@@ -113,7 +112,19 @@ def alexnet(images, train, fc=3, pretrained=False, caffe_initializer=False):
 
     return net(images)
 
-Alexnet = make_layer(alexnet)
+
+class Alexnet:
+    def __init__(self, train, fc=3, pretrained=False, caffe_initializer=False):
+        if fc < 0:
+            fc += 3
+        self.train = train
+        self.fc = fc
+        self.pretrained = pretrained
+        self.caffe_initializer = caffe_initializer
+        self.output_dim = (9216, 4096, 4096, 1000)[fc]
+
+    def __call__(self, images):
+        return alexnet(images, self.train, self.fc, self.pretrained, self.caffe_initializer)
 
 __all__ = [
     'alexnet',

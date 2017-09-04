@@ -1,10 +1,9 @@
 import tensorflow as tf
 
+
 class BaseMethod(object):
-	def __init__(self):
+    def __init__(self):
+        pass
 
-	def train(self, inputs, targets):
-		raise NotImplementedError()
-
-	def validation(self, inputs):
-		raise NotImplementedError()
+    def __call__(self, inputs, labels, loss_weights):
+        raise NotImplementedError()

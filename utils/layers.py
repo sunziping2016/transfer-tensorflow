@@ -21,7 +21,7 @@ def conv_nd(x, n, in_channels, out_channels, kernel_size, stride=1, padding=0,
         if kernel_initializer is None:
             kernel_initializer = variance_scaling_initializer(factor=float(groups), mode='FAN_AVG')
         if bias_initializer is None:
-            bias_initializer = tf.zeros_initializer
+            bias_initializer = tf.zeros_initializer()
         kernel = tf.get_variable('weight', [*kernel_size, in_channels // groups,
                                             out_channels] if callable(kernel_initializer) else None,
                                  initializer=kernel_initializer)
@@ -29,9 +29,9 @@ def conv_nd(x, n, in_channels, out_channels, kernel_size, stride=1, padding=0,
         if groups != 1:
             x = tf.concat([
                 tf.nn.convolution(*p, 'VALID', stride, dilation, name='conv%dd_%d' % (n, i + 1))
-                for i, p in enumerate(zip(tf.split(x, groups, axis=-1, name='split_input'),
-                                          tf.split(kernel, groups, axis=-1, name='split_kernel')))
-            ], axis=-1)
+                for i, p in enumerate(zip(tf.split(x, groups, axis=n + 1, name='split_input'),
+                                          tf.split(kernel, groups, axis=n + 1, name='split_kernel')))
+            ], axis=n + 1)
         else:
             x = tf.nn.convolution(x, kernel, 'VALID', stride, dilation, name='conv%dd' % n)
         if bias:
@@ -70,10 +70,10 @@ def batch_norm(x, train, eps=1e-05, decay=0.9, affine=True, name=None):
     with tf.variable_scope(name, default_name='BatchNorm2d'):
         params_shape = tf.shape(x)[-1:]
         moving_mean = tf.get_variable('mean', params_shape,
-                                      initializer=tf.zeros_initializer,
+                                      initializer=tf.zeros_initializer(),
                                       trainable=False)
         moving_variance = tf.get_variable('variance', params_shape,
-                                          initializer=tf.ones_initializer,
+                                          initializer=tf.ones_initializer(),
                                           trainable=False)
 
         def mean_var_with_update():
@@ -84,9 +84,9 @@ def batch_norm(x, train, eps=1e-05, decay=0.9, affine=True, name=None):
         mean, variance = tf.cond(train, mean_var_with_update, lambda: (moving_mean, moving_variance))
         if affine:
             beta = tf.get_variable('beta', params_shape,
-                                   initializer=tf.zeros_initializer)
+                                   initializer=tf.zeros_initializer())
             gamma = tf.get_variable('gamma', params_shape,
-                                    initializer=tf.ones_initializer)
+                                    initializer=tf.ones_initializer())
             x = tf.nn.batch_normalization(x, mean, variance, beta, gamma, eps)
         else:
             x = tf.nn.batch_normalization(x, mean, variance, None, None, eps)
@@ -107,7 +107,7 @@ def linear(x, in_channels, out_channels, bias=True, weight_initializer=None,
         if weight_initializer is None:
             weight_initializer = variance_scaling_initializer(1.0, mode='FAN_AVG')
         if bias_initializer is None:
-            bias_initializer = tf.zeros_initializer
+            bias_initializer = tf.zeros_initializer()
         w = tf.get_variable('weight', [in_channels, out_channels] if callable(weight_initializer) else None,
                             initializer=weight_initializer)
         x = tf.matmul(x, w)

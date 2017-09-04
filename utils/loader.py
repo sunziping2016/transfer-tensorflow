@@ -20,10 +20,9 @@ def load_data(dataset, batch_size, transforms=(), shuffle=True,
             tf.train.queue_runner.add_queue_runner(
                 tf.train.queue_runner.QueueRunner(data_queue, [enqueue_op] * num_readers))
             sample = data_queue.dequeue()
-            return tf.train.batch_join(
-                [[i if t is None else t(i) for i, t in zip_longest(sample, transforms)]] * num_preprocess_threads,
-                batch_size=batch_size, capacity=2 * num_preprocess_threads * batch_size)
-        return sample
+        return tf.train.batch_join(
+            [[i if t is None else t(i) for i, t in zip_longest(sample, transforms)]] * num_preprocess_threads,
+            batch_size=batch_size, capacity=2 * num_preprocess_threads * batch_size)
 
 DataLoader = make_layer(load_data)
 
