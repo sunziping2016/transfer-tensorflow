@@ -75,9 +75,11 @@ if __name__ == '__main__':
     parser.add_argument('--loss_weights', type=str, default='',
                         help='Comma separated list of loss weights.')
     parser.add_argument('--max_steps', type=int, default=2000, help='Number of steps to run trainer.')
-    parser.add_argument('--source', type=str, default=os.path.join(os.path.dirname(__file__), 'data/office/amazon.csv'),
+    parser.add_argument('--source', type=str,
+                        default=os.path.join(os.path.dirname(__file__), 'data/office/amazon.csv'),
                         help='Source list file of which every lines are space-separated image paths and labels.')
-    parser.add_argument('--target', type=str, default=os.path.join(os.path.dirname(__file__), 'data/office/amazon.csv'),
+    parser.add_argument('--target', type=str,
+                        default=os.path.join(os.path.dirname(__file__), 'data/office/dslr.csv'),
                         help='Target list file with same layout of source list file. '
                              'Labels are only used for evaluation.')
     parser.add_argument('--base_model', type=str, choices=['alexnet'], default='alexnet',
