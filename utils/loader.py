@@ -1,8 +1,8 @@
 """Contains the definition of `load_dataset` and `load_data`. `load_dataset` is
 actually a helper function to construct `tf.contrib.data.Dataset` object from
 `utils.datasets.Dataset` object, while `load_data` makes switching to different
-datasets easier. This can help a lot when you want to test the model while
-training, and you don't want to rebuild the graph.
+datasets easier. This can help a lot when you want to test the model during
+training without rebuild the graph.
 
 Example:
     data, (train_init, test_init) = load_data(
@@ -54,15 +54,22 @@ def load_dataset(dataset, batch_size=None, transforms=None,
         indices = tf.random_shuffle(indices)
         sources = tuple(map(lambda x: tf.gather(x, indices), dataset.sources))
     sources = data.Dataset.from_tensor_slices(sources).repeat(epochs)
-    if dataset.loader is not None:
-        sources = dataset.loader(sources)
+    if dataset.loader or (transforms is not None and len(transforms) != 0):
+        def transform_mapper(*args):
+            return tuple([x if f is None else f(x) for x, f in
+                          itertools.zip_longest(args, transforms)])
+        if dataset.multiple:
+            def mapper(*args):
+                new_sources = dataset.loader(*args)
+                if transforms is not None and len(transforms) != 0:
+                    new_sources.map(transform_mapper)
+            sources = sources.flat_map(mapper)
+        else:
+            def mapper(*args):
+                return transform_mapper(*dataset.loader(*args))
+            sources = sources.map(mapper)
     if shuffle_buffer_size is not None:
         sources.shuffle(buffer_size=shuffle_buffer_size)
-    if transforms is not None and len(transforms) != 0:
-        def _mapper(*args):
-            return [x if x is None else f(x) for x, f in
-                    itertools.zip_longest(args, transforms)]
-        sources = sources.map(_mapper)
     if batch_size is not None:
         sources = sources.batch(batch_size)
     return sources
