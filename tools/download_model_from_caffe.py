@@ -81,7 +81,7 @@ def extract_model(prototxt, model, output, first_fc_in):
             model[name + '/bias'] = params[1].data
         else:
             print('Unknown layer: %s  %s' % (name, '  '.join([str(param.data.shape) for param in params])), file=sys.stderr)
-    pickle.dump(model, open(output, 'wb'))
+    pickle.dump(model, open(output, 'wb'), protocol=2)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download trained Caffe model and convert it to NumPy pickle')

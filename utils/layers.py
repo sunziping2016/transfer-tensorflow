@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.python.training.moving_averages import assign_moving_average
 from tensorflow.contrib.layers import variance_scaling_initializer
 from .layers_utils import *
+from itertools import chain
 
 
 def conv_nd(x, n, in_channels, out_channels, kernel_size, stride=1, padding=0,
@@ -17,18 +18,18 @@ def conv_nd(x, n, in_channels, out_channels, kernel_size, stride=1, padding=0,
         if not hasattr(dilation, '__iter__'):
             dilation = (dilation,) * n
         if padding[0] != 0 or padding[1] != 0:
-            x = tf.pad(x, [[0, 0], *zip(padding, padding), [0, 0]])
+            x = tf.pad(x, [[0, 0]] + list(zip(padding, padding)) +[[0, 0]])
         if kernel_initializer is None:
             kernel_initializer = variance_scaling_initializer(factor=float(groups), mode='FAN_AVG')
         if bias_initializer is None:
             bias_initializer = tf.zeros_initializer()
-        kernel = tf.get_variable('weight', [*kernel_size, in_channels // groups,
+        kernel = tf.get_variable('weight', kernel_size + [in_channels // groups,
                                             out_channels] if callable(kernel_initializer) else None,
                                  initializer=kernel_initializer)
         # For better graph layout
         if groups != 1:
             x = tf.concat([
-                tf.nn.convolution(*p, 'VALID', stride, dilation, name='conv%dd_%d' % (n, i + 1))
+                tf.nn.convolution(p[0], p[1], 'VALID', stride, dilation, name='conv%dd_%d' % (n, i + 1))
                 for i, p in enumerate(zip(tf.split(x, groups, axis=n + 1, name='split_input'),
                                           tf.split(kernel, groups, axis=n + 1, name='split_kernel')))
             ], axis=n + 1)
@@ -98,7 +99,9 @@ def max_pool(x, kernel_size, strides, name=None):
         kernel_size = (kernel_size,) * 2
     if not hasattr(strides, '__iter__'):
         strides = (strides,) * 2
-    return tf.nn.max_pool(x, [1, *kernel_size, 1], [1, *strides, 1], 'VALID', name=name)
+    kernel_size = (1,) + kernel_size + (1,)
+    strides = (1,) + strides + (1,)
+    return tf.nn.max_pool(x, kernel_size, strides, 'VALID', name=name)
 
 
 def linear(x, in_channels, out_channels, bias=True, weight_initializer=None,
@@ -127,7 +130,7 @@ def sequential(x, layers=(), name=None):
 
 class Sequential(list):
     def __init__(self, layers=(), name=None):
-        super().__init__(layers)
+        super(Sequential, self).__init__(layers)
         self.name = name
 
     def __call__(self, *args):
@@ -136,6 +139,7 @@ class Sequential(list):
 
 def conditional(x, cond, branch1, branch2, name=None):
     return tf.cond(cond, lambda: branch1(x), lambda: branch2(x), name=name)
+
 
 ConvND = make_layer(conv_nd)
 Conv1D = make_layer(conv1d)

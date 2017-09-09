@@ -12,7 +12,7 @@ Examples:
     transformed_image = transform(image)
 
 Todo:
-    * Some other transforms involving padding，HSL etc.
+    * Some other transforms involving padding, HSL etc.
     * Consider generating multiple images from one image?
 """
 import tensorflow as tf
@@ -29,7 +29,7 @@ class Compose(list):
             name (str): variable scope for these transforms. Defaults to no
                 scope
         """
-        super().__init__(transforms)
+        super(Compose, self).__init__(transforms)
         self.name = name
 
     def __call__(self, x):
@@ -92,7 +92,7 @@ class RandomCrop(object):
         self.size = size if hasattr(size, '__iter__') else (size,) * 2
 
     def __call__(self, x):
-        return tf.random_crop(x, (*self.size, tf.shape(x)[-1]))
+        return tf.random_crop(x, self.size + (tf.shape(x)[-1],))
 
 
 class RandomHorizontalFlip(object):

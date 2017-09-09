@@ -9,7 +9,7 @@ class DummyContextMgr:
 def make_layer(layer):
     def construct(*args, **kwargs):
         def call(*inputs):
-            return layer(*inputs, *args, **kwargs)
+            return layer(*(inputs + args), **kwargs)
         return call
     return construct
 

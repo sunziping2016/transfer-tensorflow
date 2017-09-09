@@ -8,19 +8,6 @@ from models import *
 from methods import *
 
 
-def train_preprocess(image, label, mean=None, crop=(227, 227)):
-    image = tf.subtract(image, mean)
-    image = tf.random_crop(image, [*crop, 3])
-    image = tf.image.random_flip_left_right(image)
-    return image, label
-
-
-def test_preprocess(image, label, mean=None, crop=(227, 227)):
-    image = tf.subtract(image, mean)
-    image = tf.image.resize_image_with_crop_or_pad(image, *crop)
-    return image, label
-
-
 def main(args):
     # Log
     if tf.gfile.Exists(args.log_dir):

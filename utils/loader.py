@@ -24,7 +24,7 @@ Example:
                 sess.run(train_init)
 """
 
-import itertools
+from six.moves import zip_longest
 import tensorflow as tf
 import tensorflow.contrib.data as data
 
@@ -57,7 +57,7 @@ def load_dataset(dataset, batch_size=None, transforms=None,
     if dataset.loader or (transforms is not None and len(transforms) != 0):
         def transform_mapper(*args):
             return tuple([x if f is None else f(x) for x, f in
-                          itertools.zip_longest(args, transforms)])
+                          zip_longest(args, transforms)])
         if dataset.multiple:
             def mapper(*args):
                 new_sources = dataset.loader(*args)

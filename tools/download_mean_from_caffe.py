@@ -1,6 +1,8 @@
 import os
 import argparse
 from tools_utils import download
+import pickle
+
 
 caffe_mean_files = {
     # name: (url, path to file if compression, save path for binaryproto, save path for pkl)
@@ -26,7 +28,9 @@ def extract_binaryproto(proto, output):
     blob = BlobProto()
     data = open(proto, 'rb').read()
     blob.ParseFromString(data)
-    #np.save(output, np.array(blobproto_to_array(blob)).squeeze(0).transpose([1, 2, 0]).astype(np.float32))
+    mean = np.array(blobproto_to_array(blob)).squeeze(0) \
+        .transpose([1, 2, 0]).astype(np.float32)
+    pickle.dump(mean, open(output, 'wb'), protocol=2)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download Caffe mean file and convert it to NumPy pickle')

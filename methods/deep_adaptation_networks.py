@@ -2,7 +2,7 @@ import tensorflow as tf
 import utils.layers as nn
 import core.losses as L
 from .base_method import BaseMethod
-from future.moves.itertools import zip_longest
+from six.moves import zip_longest
 
 
 class DeepAdaptationNetwork(BaseMethod):
@@ -30,7 +30,7 @@ class DeepAdaptationNetwork(BaseMethod):
         ]
         loss = sum([w * l if w is not None else l
                     for w, l in zip_longest(loss_weights,
-                                            [cross_entropy_loss, *mmd_losses])])
+                                            [cross_entropy_loss] + mmd_losses)])
         correct = tf.nn.in_top_k(target_logits, labels[1], 1)
         accuracy = tf.reduce_sum(tf.cast(correct, tf.int32))
         return loss, accuracy
