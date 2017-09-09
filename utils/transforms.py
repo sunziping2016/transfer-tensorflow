@@ -92,7 +92,7 @@ class RandomCrop(object):
         self.size = size if hasattr(size, '__iter__') else (size,) * 2
 
     def __call__(self, x):
-        return tf.random_crop(x, (*self.size, tf.shape(x)[:-1]))
+        return tf.random_crop(x, (*self.size, tf.shape(x)[-1]))
 
 
 class RandomHorizontalFlip(object):
