@@ -10,13 +10,13 @@ caffe_mean_files = {
     'ilsvrc_2012': (
         'https://file.szp.io/f/1be381bd3c/?dl=1',
         'ilsvrc_2012_mean.binaryproto',
-        '../models/ilsvrc_2012_mean.npy'
+        '../models/ilsvrc_2012_mean.pkl'
     ),
     # From https://github.com/KaimingHe/deep-residual-networks
     'resnet': (
         'https://file.szp.io/f/b7eeb02e39/?dl=1',
         'resnet_mean.binaryproto',
-        '../models/resnet_mean.npy'
+        '../models/resnet_mean.pkl'
     )
 }
 

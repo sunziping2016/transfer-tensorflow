@@ -2,8 +2,8 @@ import numpy as np
 import os
 
 mean_files = {
-    'ilsvrc_2012': 'ilsvrc_2012_mean.npy',
-    'resnet': 'resnet_mean.npy'
+    'ilsvrc_2012': 'ilsvrc_2012_mean.pkl',
+    'resnet': 'resnet_mean.pkl'
 }
 
 
