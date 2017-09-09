@@ -2,7 +2,7 @@ import os
 import argparse
 import sys
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+from tensorflow.python.training import training_util
 from utils import *
 from models import *
 from methods import *
@@ -16,7 +16,7 @@ def configure_learning_rate(args, global_step):
         with tf.variable_scope("InverseTimeDecay"):
             global_step = tf.cast(global_step, tf.float32)
             denom = tf.add(1.0, tf.multiply(args.lr_gamma, global_step))
-            return tf.multiply(args.lr, tf.pow(denom, args.lr_power))
+            return tf.multiply(args.lr, tf.pow(denom, -args.lr_power))
     else:
         raise ValueError('lr_policy [%s] was not recognized',
                          args.lr_policy)
@@ -57,8 +57,8 @@ def main(args):
                             transforms=(test_transform,)))
 
     # Variables
-    training = slim.variable('train', initializer=True, trainable=False,
-                             collections=[tf.GraphKeys.LOCAL_VARIABLES])
+    training = tf.get_variable('train', initializer=True, trainable=False,
+                               collections=[tf.GraphKeys.LOCAL_VARIABLES])
 
     # Loss weights
     loss_weights = [float(i) for i in args.loss_weights.split(',') if i]
@@ -75,7 +75,7 @@ def main(args):
                             loss_weights)
 
     # Optimize
-    global_step = slim.create_global_step()
+    global_step = training_util.create_global_step()
     var_list1 = list(filter(lambda x: not x.name.startswith('Linear'),
                             tf.global_variables()))
     var_list2 = list(filter(lambda x: x.name.startswith('Linear'),
@@ -85,7 +85,7 @@ def main(args):
     train_op = tf.group(
         tf.train.MomentumOptimizer(learning_rate, args.momentum)
             .apply_gradients(zip(grads[:len(var_list1)], var_list1)),
-        tf.train.MomentumOptimizer(learning_rate * 20, args.momentum)
+        tf.train.MomentumOptimizer(learning_rate * 10, args.momentum)
             .apply_gradients(zip(grads[len(var_list1):], var_list2),
                              global_step=global_step))
 
@@ -99,20 +99,19 @@ def main(args):
         sess.run(init)
         sess.run(train_init)
         for _ in range(args.max_steps):
-            _, loss_val, accuracy_val, step_val = \
-                sess.run([train_op, loss, accuracy, global_step])
-            print('  step: %d\tloss: %.3f\taccuracy: %.3f%%' %
-                  (step_val, loss_val,
+            _, lr_val, loss_val, accuracy_val, step_val = \
+                sess.run([train_op, learning_rate, loss, accuracy, global_step])
+            print('  step: %d\tlr: %.8f\tloss: %.3f\taccuracy: %.3f%%' %
+                  (step_val, lr_val, loss_val,
                    float(accuracy_val) / args.batch_size * 100))
             if step_val % 100 == 0:
                 accuracies = []
                 sess.run(test_init)
                 for _ in range(20):
                     accuracies.append(sess.run(accuracy))
-                print('test accuracy: %.3f' % (sum(accuracies) /
+                print('test accuracy: %.3f' % (float(sum(accuracies)) /
                                                args.batch_size * 100 / 20.0))
                 sess.run(train_init)
-
 
 
 if __name__ == '__main__':
