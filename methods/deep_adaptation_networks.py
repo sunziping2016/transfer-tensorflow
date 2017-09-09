@@ -3,7 +3,6 @@ import utils.layers as nn
 import core.losses as L
 from .base_method import BaseMethod
 from future.moves.itertools import zip_longest
-from collections import OrderedDict
 
 
 class DeepAdaptationNetwork(BaseMethod):
