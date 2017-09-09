@@ -14,7 +14,7 @@ def gaussian_kernel(source, target, kernel_mul=2.0, kernel_num=5, sigma=None, na
         return sum([tf.exp(-distance / i) for i in bandwidth_list])
 
 
-def mmd_loss(source, target, sampler=random_sampler, kernel_mul=2.0, kernel_num=5, sigma=None):
+def mmd_loss(source, target, sampler=None, kernel_mul=2.0, kernel_num=5, sigma=None):
     source_num, target_num = tf.shape(source)[0], tf.shape(target)[0]
     kernels = gaussian_kernel(source, target, kernel_mul=kernel_mul, kernel_num=kernel_num, sigma=sigma)
     kernels = tf.stop_gradient(kernels)
@@ -27,9 +27,11 @@ def mmd_loss(source, target, sampler=random_sampler, kernel_mul=2.0, kernel_num=
                               tf.gather_nd(kernels, tf.stack([s1, t2], 1)) -
                               tf.gather_nd(kernels, tf.stack([s2, t1], 1)))
     else:
-        return tf.reduce_sum(kernels[:source_num, :source_num]) / tf.square(source_num) \
-               + tf.reduce_sum(kernels[source_num:, source_num:]) / tf.square(target_num) \
-               - 2 * tf.reduce_sum(kernels[:source_num, source_num:]) / source_num / target_num
+        source_num_float = tf.cast(source_num, tf.float32)
+        target_num_float = tf.cast(target_num, tf.float32)
+        return tf.reduce_sum(kernels[:source_num, :source_num]) / tf.square(source_num_float) \
+               + tf.reduce_sum(kernels[source_num:, source_num:]) / tf.square(target_num_float) \
+               - 2.0 * tf.reduce_sum(kernels[:source_num, source_num:]) / (source_num_float * target_num_float)
 
 
 def jmmd_loss(source_list, target_list, sampler=random_sampler, kernel_muls=2.0, kernel_nums=5, sigmas=None):

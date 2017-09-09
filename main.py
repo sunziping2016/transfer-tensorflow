@@ -8,6 +8,20 @@ from models import *
 from methods import *
 
 
+def configure_learning_rate(args, global_step):
+    if args.lr_policy == 'fixed':
+        return tf.constant(args.lr, name='fixed_learning_rate')
+    elif args.lr_policy == 'inv':
+        print(args)
+        with tf.variable_scope("InverseTimeDecay"):
+            global_step = tf.cast(global_step, tf.float32)
+            denom = tf.add(1.0, tf.multiply(args.lr_gamma, global_step))
+            return tf.multiply(args.lr, tf.pow(denom, args.lr_power))
+    else:
+        raise ValueError('lr_policy [%s] was not recognized',
+                         args.lr_policy)
+
+
 def main(args):
     # Log
     if tf.gfile.Exists(args.log_dir):
@@ -61,18 +75,19 @@ def main(args):
                             loss_weights)
 
     # Optimize
-    step = tf.Variable(0, name='global_step', trainable=False)
+    global_step = slim.create_global_step()
     var_list1 = list(filter(lambda x: not x.name.startswith('Linear'),
                             tf.global_variables()))
     var_list2 = list(filter(lambda x: x.name.startswith('Linear'),
                             tf.global_variables()))
     grads = tf.gradients(loss, var_list1 + var_list2)
+    learning_rate = configure_learning_rate(args, global_step)
     train_op = tf.group(
-        tf.train.GradientDescentOptimizer(args.learning_rate)
+        tf.train.MomentumOptimizer(learning_rate, args.momentum)
             .apply_gradients(zip(grads[:len(var_list1)], var_list1)),
-        tf.train.GradientDescentOptimizer(args.learning_rate * 20)
+        tf.train.MomentumOptimizer(learning_rate * 20, args.momentum)
             .apply_gradients(zip(grads[len(var_list1):], var_list2),
-                             global_step=step))
+                             global_step=global_step))
 
     # Initializer
     init = tf.group(tf.global_variables_initializer(), source_init)
@@ -85,20 +100,39 @@ def main(args):
         sess.run(train_init)
         for _ in range(args.max_steps):
             _, loss_val, accuracy_val, step_val = \
-                sess.run([train_op, loss, accuracy, step])
-            print('step: %d\tloss: %.3f\taccuracy: %.3f%%' %
-                  (step_val, loss_val, accuracy_val / args.batch_size * 100))
+                sess.run([train_op, loss, accuracy, global_step])
+            print('  step: %d\tloss: %.3f\taccuracy: %.3f%%' %
+                  (step_val, loss_val,
+                   float(accuracy_val) / args.batch_size * 100))
+            if step_val % 100 == 0:
+                accuracies = []
+                sess.run(test_init)
+                for _ in range(20):
+                    accuracies.append(sess.run(accuracy))
+                print('test accuracy: %.3f' % (sum(accuracies) /
+                                               args.batch_size * 100 / 20.0))
+                sess.run(train_init)
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size.')
-    parser.add_argument('--learning_rate', type=float, default=3e-4,
+    parser.add_argument('--lr', type=float, default=3e-4,
                         help='Initial learning rate.')
+    parser.add_argument('--lr_policy', type=str, choices=['fixed', 'inv'],
+                        default='inv',
+                        help='Learning rate decay policy.')
+    parser.add_argument('--lr_gamma', type=float, default=2e-3,
+                        help='Learning rate decay parameter.')
+    parser.add_argument('--lr_power', type=float, default=0.75,
+                        help='Learning rate decay parameter.')
+    parser.add_argument('--momentum', type=float, default=0.9,
+                        help='Weight momentum for the solver.')
     parser.add_argument('--loss_weights', type=str, default='',
                         help='Comma separated list of loss weights.')
-    parser.add_argument('--max_steps', type=int, default=2000,
+    parser.add_argument('--max_steps', type=int, default=50000,
                         help='Number of steps to run trainer.')
     parser.add_argument('--source', type=str,
                         default=os.path.join(os.path.dirname(__file__),
