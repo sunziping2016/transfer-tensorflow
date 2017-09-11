@@ -12,7 +12,6 @@ def configure_learning_rate(args, global_step):
     if args.lr_policy == 'fixed':
         return tf.constant(args.lr, name='fixed_learning_rate')
     elif args.lr_policy == 'inv':
-        print(args)
         with tf.variable_scope("InverseTimeDecay"):
             global_step = tf.cast(global_step, tf.float32)
             denom = tf.add(1.0, tf.multiply(args.lr_gamma, global_step))
