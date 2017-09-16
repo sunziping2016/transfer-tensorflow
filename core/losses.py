@@ -8,7 +8,7 @@ def gaussian_kernel(source, target, kernel_mul=2.0, kernel_num=5, sigma=None, na
         total = tf.concat([source, target], axis=0)
         square = tf.reshape(tf.reduce_sum(tf.square(total), axis=-1), [-1, 1])
         distance = square - 2 * tf.matmul(total, tf.transpose(total)) + tf.transpose(square)
-        bandwidth = tf.reduce_sum(distance) / tf.cast(n * (n - 1), tf.float32)\
+        bandwidth = tf.stop_gradient(tf.reduce_sum(distance) / tf.cast(n * (n - 1), tf.float32)) \
             if sigma is None else tf.constant(sigma, dtype=tf.float32)
         bandwidth_list = [bandwidth * (kernel_mul ** (i - kernel_num // 2)) for i in range(kernel_num)]
         return sum([tf.exp(-distance / i) for i in bandwidth_list])
@@ -17,7 +17,6 @@ def gaussian_kernel(source, target, kernel_mul=2.0, kernel_num=5, sigma=None, na
 def mmd_loss(source, target, sampler=None, kernel_mul=2.0, kernel_num=5, sigma=None):
     source_num, target_num = tf.shape(source)[0], tf.shape(target)[0]
     kernels = gaussian_kernel(source, target, kernel_mul=kernel_mul, kernel_num=kernel_num, sigma=sigma)
-    kernels = tf.stop_gradient(kernels)
     if sampler is not None:
         sample_num = tf.maximum(source_num, target_num)
         s1, s2 = sampler(sample_num, source_num)
