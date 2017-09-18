@@ -67,7 +67,8 @@ def main(args):
     base_model = Alexnet(training, fc=-1, pretrained=True)
 
     # Prepare input images
-    method = DeepAdaptationNetwork(base_model, 31)
+    # method = DeepAdaptationNetwork(base_model, 31)
+    method = JointAdaptationNetwork(base_model, 31)
 
     # Losses and accuracy
     loss, accuracy = method((source[0], target[0]),
