@@ -23,9 +23,10 @@ def configure_learning_rate(args, global_step):
 
 def main(args):
     # Log
-    if tf.gfile.Exists(args.log_dir):
-        tf.gfile.DeleteRecursively(args.log_dir)
-    tf.gfile.MakeDirs(args.log_dir)
+    if args.log_dir:
+        if tf.gfile.Exists(args.log_dir):
+            tf.gfile.DeleteRecursively(args.log_dir)
+        tf.gfile.MakeDirs(args.log_dir)
 
     # Preprocess
     mean = mean_file_loader('ilsvrc_2012')
@@ -157,9 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('--kernel_num', type=int, default=5,
                         help='Number of kernel for MMD and JMMD. (valid only '
                              'when --loss=mmd or --lost=jmmd)')
-    parser.add_argument('--log_dir', type=str,
-                        default=os.path.join(os.getenv('TEST_TMPDIR', '/tmp'),
-                                             'transfer-tensorflow/'),
+    parser.add_argument('--log_dir', type=str,default='',
                         help='Directory to put the log data.')
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=lambda _: main(FLAGS), argv=[sys.argv[0]] + unparsed)
