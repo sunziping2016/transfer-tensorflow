@@ -101,10 +101,11 @@ def main(args):
         for _ in range(args.max_steps):
             _, lr_val, loss_val, accuracy_val, step_val = \
                 sess.run([train_op, learning_rate, loss, accuracy, global_step])
-            print('  step: %d\tlr: %.8f\tloss: %.3f\taccuracy: %.3f%%' %
-                  (step_val, lr_val, loss_val,
-                   float(accuracy_val) / args.batch_size * 100))
-            if step_val % 100 == 0:
+            if step_val % args.print_freq == 0:
+                print('  step: %d\tlr: %.8f\tloss: %.3f\taccuracy: %.3f%%' %
+                      (step_val, lr_val, loss_val,
+                       float(accuracy_val) / args.batch_size * 100))
+            if step_val % args.test_freq == 0:
                 accuracies = []
                 sess.run(test_init)
                 for _ in range(20):
@@ -116,22 +117,22 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=64,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='Batch size.')
     parser.add_argument('--lr', type=float, default=3e-4,
                         help='Initial learning rate.')
-    parser.add_argument('--lr_policy', type=str, choices=['fixed', 'inv'],
+    parser.add_argument('--lr-policy', type=str, choices=['fixed', 'inv'],
                         default='inv',
                         help='Learning rate decay policy.')
-    parser.add_argument('--lr_gamma', type=float, default=2e-3,
+    parser.add_argument('--lr-gamma', type=float, default=2e-3,
                         help='Learning rate decay parameter.')
-    parser.add_argument('--lr_power', type=float, default=0.75,
+    parser.add_argument('--lr-power', type=float, default=0.75,
                         help='Learning rate decay parameter.')
     parser.add_argument('--momentum', type=float, default=0.9,
                         help='Weight momentum for the solver.')
-    parser.add_argument('--loss_weights', type=str, default='',
+    parser.add_argument('--loss-weights', type=str, default='',
                         help='Comma separated list of loss weights.')
-    parser.add_argument('--max_steps', type=int, default=50000,
+    parser.add_argument('--max-steps', type=int, default=50000,
                         help='Number of steps to run trainer.')
     parser.add_argument('--source', type=str,
                         default=os.path.join(os.path.dirname(__file__),
@@ -143,7 +144,7 @@ if __name__ == '__main__':
                                              'data/office/webcam.csv'),
                         help='Target list file with same layout of source list '
                              'file. Labels are only used for evaluation.')
-    parser.add_argument('--base_model', type=str, choices=['alexnet'],
+    parser.add_argument('--base-model', type=str, choices=['alexnet'],
                         default='alexnet', help='Basic model to use.')
     parser.add_argument('--method', type=str, choices=['DAN'], default='DAN',
                         help='Algorithm to use.')
@@ -152,13 +153,17 @@ if __name__ == '__main__':
                         default='random',
                         help='Sampler for MMD and JMMD. (valid only when '
                              '--loss=mmd or --lost=jmmd)')
-    parser.add_argument('--kernel_mul', type=float, default=2.0,
+    parser.add_argument('--print-freq', type=int, default=100,
+                        help='')
+    parser.add_argument('--test-freq', type=int, default=300,
+                        help='')
+    parser.add_argument('--kernel-mul', type=float, default=2.0,
                         help='Kernel multiplier for MMD and JMMD. (valid only '
                              'when --loss=mmd or --lost=jmmd)')
-    parser.add_argument('--kernel_num', type=int, default=5,
+    parser.add_argument('--kernel-num', type=int, default=5,
                         help='Number of kernel for MMD and JMMD. (valid only '
                              'when --loss=mmd or --lost=jmmd)')
-    parser.add_argument('--log_dir', type=str,default='',
+    parser.add_argument('--log-dir', type=str,default='',
                         help='Directory to put the log data.')
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=lambda _: main(FLAGS), argv=[sys.argv[0]] + unparsed)
