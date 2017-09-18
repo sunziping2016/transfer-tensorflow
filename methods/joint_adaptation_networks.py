@@ -33,7 +33,7 @@ class JointAdaptationNetwork(BaseMethod):
         ]
         loss = sum([w * l if w is not None else l
                     for w, l in zip_longest(loss_weights,
-                                            [cross_entropy_loss] + jmmd_losses)])
+                                            jmmd_losses)]) + cross_entropy_loss
         correct = tf.nn.in_top_k(target_logits, labels[1], 1)
         accuracy = tf.reduce_sum(tf.cast(correct, tf.int32))
         return loss, accuracy
