@@ -41,7 +41,9 @@ def jmmd_loss(source_list, target_list, sampler=None, kernel_muls=2.0, kernel_nu
     if not hasattr(sigmas, '__iter__'):
         sigmas = (sigmas,) * len(source_list)
     source_num, target_num = tf.shape(source_list[0])[0], tf.shape(target_list[0])[0]
-    kernels = sum([gaussian_kernel(*i) for i in zip(source_list, target_list, kernel_muls, kernel_nums, sigmas)])
+    kernels = 1.
+    for i in zip(source_list, target_list, kernel_muls, kernel_nums, sigmas):
+        kernels = kernels * gaussian_kernel(*i)
     if sampler is not None:
         sample_num = tf.maximum(source_num, target_num)
         s1, s2 = sampler(sample_num, source_num)
@@ -51,6 +53,8 @@ def jmmd_loss(source_list, target_list, sampler=None, kernel_muls=2.0, kernel_nu
                              - tf.gather_nd(kernels, tf.stack(s1, t2))
                              - tf.gather_nd(kernels, tf.stack(s2, t1))) / sample_num
     else:
-        return tf.reduce_sum(kernels[:source_num, :source_num]) / tf.square(source_num) \
-               + tf.reduce_sum(kernels[source_num:, source_num:]) / tf.square(target_num) \
-               - 2 * tf.reduce_sum(kernels[:source_num, source_num:]) / source_num / target_num
+        source_num_float = tf.cast(source_num, tf.float32)
+        target_num_float = tf.cast(target_num, tf.float32)
+        return tf.reduce_sum(kernels[:source_num, :source_num]) / tf.square(source_num_float) \
+               + tf.reduce_sum(kernels[source_num:, source_num:]) / tf.square(target_num_float) \
+               - 2. * tf.reduce_sum(kernels[:source_num, source_num:]) / source_num_float / target_num_float

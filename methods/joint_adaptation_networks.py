@@ -28,8 +28,8 @@ class JointAdaptationNetwork(BaseMethod):
                                                                        name='xentropy')
         cross_entropy_loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
         jmmd_losses = [
-            L.mmd_loss([source_feature, source_logits], 
-                       [target_feature, target_logits]),
+            L.jmmd_loss([source_feature, source_logits], 
+                        [target_feature, target_logits]),
         ]
         loss = sum([w * l if w is not None else l
                     for w, l in zip_longest(loss_weights,
